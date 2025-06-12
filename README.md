@@ -3,38 +3,32 @@
 
 ## 📌 Overview
 
-**MPI (Message Passing Interface)** is a standardized and portable message-passing system designed to allow processes to communicate with each other in a parallel computing environment. It is widely used in **High-Performance Computing (HPC)** for developing scalable and efficient parallel applications on distributed-memory systems.
+**MPI (Message Passing Interface)** is a standardized and portable communication protocol designed for **parallel and distributed computing**. It is primarily used in **High-Performance Computing (HPC)** to coordinate processes executing across multiple nodes.
 
-* **Language Bindings:** C, C++, Fortran (C++ support via C interface)
-* **Implementations:** MPICH, OpenMPI, Intel MPI, MVAPICH, etc.
-* **Model:** Based on the **SPMD (Single Program Multiple Data)** model
-
----
-
-## 🧠 Why Use MPI?
-
-* Leverages **multiple processors/nodes** for performance
-* Ideal for **scientific computing, simulations**, and **data-intensive tasks**
-* Runs on clusters, supercomputers, and multi-core systems
+* **Standardized:** By MPI Forum
+* **Languages Supported:** C, C++ (via C bindings), Fortran
+* **Popular Implementations:** OpenMPI, MPICH, Intel MPI
+* **Communication Model:** Message-passing (processes use send/receive)
 
 ---
 
 ## ⚙️ Installation
 
-### Ubuntu/Debian:
+### On Ubuntu/Debian:
 
 ```bash
-sudo apt update
 sudo apt install mpich
 ```
 
-### macOS (with Homebrew):
+### On macOS:
 
 ```bash
 brew install mpich
 ```
 
-### Compile and Run:
+---
+
+## 🧪 Compile and Run
 
 ```bash
 mpic++ program.cpp -o program
@@ -43,9 +37,7 @@ mpirun -np 4 ./program
 
 ---
 
-## 📘 MPI Basics
-
-### Hello World Example (C++)
+## 🧠 Basic MPI Program
 
 ```cpp
 #include <mpi.h>
@@ -54,11 +46,11 @@ mpirun -np 4 ./program
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
-    int world_rank, world_size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Get process ID
+    MPI_Comm_size(MPI_COMM_WORLD, &size); // Get number of processes
 
-    std::cout << "Hello from process " << world_rank << " out of " << world_size << std::endl;
+    std::cout << "Hello from process " << rank << " of " << size << std::endl;
 
     MPI_Finalize();
     return 0;
@@ -67,136 +59,171 @@ int main(int argc, char** argv) {
 
 ---
 
-## 🔑 Most Commonly Used MPI APIs (in C++ via C interface)
+## 🧩 MPI API Reference – C++ (C Bindings)
 
-### 1. **Initialization and Finalization**
+### 1. **Initialization & Finalization**
 
-| Function       | Description                               |
-| -------------- | ----------------------------------------- |
-| `MPI_Init`     | Initializes the MPI execution environment |
-| `MPI_Finalize` | Terminates the MPI environment            |
+#### `int MPI_Init(int *argc, char ***argv);`
 
-### 2. **Process Identification**
+* Initializes MPI environment.
+* Must be called before any other MPI call.
 
-| Function        | Description                        |
-| --------------- | ---------------------------------- |
-| `MPI_Comm_rank` | Gets the rank (ID) of the process  |
-| `MPI_Comm_size` | Gets the total number of processes |
+#### `int MPI_Finalize();`
+
+* Cleans up the MPI environment.
+* Must be called at the end of all MPI programs.
+
+---
+
+### 2. **Process Info**
+
+#### `int MPI_Comm_rank(MPI_Comm comm, int *rank);`
+
+* `comm`: Communicator (e.g. `MPI_COMM_WORLD`)
+* `rank`: Output, ID of the calling process (0 to size-1)
+
+#### `int MPI_Comm_size(MPI_Comm comm, int *size);`
+
+* `comm`: Communicator
+* `size`: Output, total number of processes in the communicator
+
+---
 
 ### 3. **Point-to-Point Communication**
 
-| Function    | Description                        |
-| ----------- | ---------------------------------- |
-| `MPI_Send`  | Blocking send                      |
-| `MPI_Recv`  | Blocking receive                   |
-| `MPI_Isend` | Non-blocking send                  |
-| `MPI_Irecv` | Non-blocking receive               |
-| `MPI_Wait`  | Waits for a non-blocking operation |
+#### `int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);`
+
+* `buf`: Starting address of send buffer
+* `count`: Number of elements to send
+* `datatype`: Type of elements (e.g., `MPI_INT`)
+* `dest`: Destination process rank
+* `tag`: Message tag
+* `comm`: Communicator
+
+#### `int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status);`
+
+* `buf`: Receive buffer
+* `count`: Max number of elements to receive
+* `datatype`: Expected data type
+* `source`: Rank of sender (`MPI_ANY_SOURCE` for wildcard)
+* `tag`: Message tag (`MPI_ANY_TAG` for wildcard)
+* `comm`: Communicator
+* `status`: Output status object (can be `MPI_STATUS_IGNORE`)
+
+#### `int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request);`
+
+* Same as `MPI_Send`, but non-blocking
+* `request`: Used to track the progress
+
+#### `int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request);`
+
+* Non-blocking receive
+
+#### `int MPI_Wait(MPI_Request *request, MPI_Status *status);`
+
+* Blocks until the non-blocking request completes
+* `request`: Pointer to an MPI request object
+* `status`: Can be `MPI_STATUS_IGNORE`
+
+---
 
 ### 4. **Collective Communication**
 
-| Function        | Description                              |
-| --------------- | ---------------------------------------- |
-| `MPI_Bcast`     | Broadcast from one to all processes      |
-| `MPI_Scatter`   | Distributes unique data from root to all |
-| `MPI_Gather`    | Gathers data from all to root            |
-| `MPI_Allgather` | Gathers data from all to all             |
-| `MPI_Reduce`    | Reduces values (e.g., sum, max) to root  |
-| `MPI_Allreduce` | Reduces and shares result with all       |
+#### `int MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm);`
+
+* `buffer`: Buffer (send from root, receive at others)
+* `count`: Number of elements
+* `datatype`: Type of elements
+* `root`: Rank of broadcasting process
+* `comm`: Communicator
+
+#### `int MPI_Gather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm);`
+
+* Gathers data from all processes to root
+
+#### `int MPI_Scatter(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm);`
+
+* Scatters data from root to all processes
+
+#### `int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);`
+
+* `sendbuf`: Local input
+* `recvbuf`: Output at root
+* `count`: Number of elements
+* `datatype`: Type of elements
+* `op`: Operation (e.g. `MPI_SUM`, `MPI_MAX`)
+* `root`: Rank of root process
+
+#### `int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);`
+
+* Like `MPI_Reduce` but distributes result to all processes
+
+#### `int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);`
+
+* Gathers from all to all
+
+---
 
 ### 5. **Synchronization**
 
-| Function      | Description                         |
-| ------------- | ----------------------------------- |
-| `MPI_Barrier` | Blocks until all processes reach it |
+#### `int MPI_Barrier(MPI_Comm comm);`
 
-### 6. **Derived Data Types**
-
-| Function                 | Description                    |
-| ------------------------ | ------------------------------ |
-| `MPI_Type_create_struct` | Create a custom data type      |
-| `MPI_Type_commit`        | Finalize the derived data type |
+* All processes wait until every process reaches the barrier
 
 ---
 
-## 📌 Advanced Concepts
+### 6. **Status and Request Handling**
 
-### 🔄 Non-Blocking Communication
+#### `MPI_Status`
 
-Improves performance by overlapping computation and communication:
+Structure that stores info about a received message:
 
-```cpp
-MPI_Request request;
-MPI_Isend(data, count, MPI_INT, dest, tag, MPI_COMM_WORLD, &request);
-// Do computation
-MPI_Wait(&request, MPI_STATUS_IGNORE);
-```
+* `MPI_SOURCE`: Sender’s rank
+* `MPI_TAG`: Message tag
+* `MPI_ERROR`: Error code
 
-### 📤 Collective Communication Example
+#### `MPI_Request`
 
-```cpp
-int data;
-MPI_Bcast(&data, 1, MPI_INT, 0, MPI_COMM_WORLD); // Root sends `data` to all
-```
-
-### 🧮 Reduction Example
-
-```cpp
-int local_sum = 10, global_sum;
-MPI_Reduce(&local_sum, &global_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-```
+Used to track progress of non-blocking communication
 
 ---
 
-## 🧪 Debugging and Profiling
+### 7. **Derived Data Types (Optional but Advanced)**
 
-* Use tools like **`mpiP`**, **`TAU`**, or **Intel VTune**
-* Compile with debug flags: `mpic++ -g`
-* Check return codes from MPI calls
+#### `int MPI_Type_create_struct(int count, const int array_of_blocklengths[], const MPI_Aint array_of_displacements[], const MPI_Datatype array_of_types[], MPI_Datatype *newtype);`
 
----
+* Creates custom data types
 
-## 📚 Resources
+#### `int MPI_Type_commit(MPI_Datatype *datatype);`
 
-* [MPI Standard (official)](https://www.mpi-forum.org/)
-* [MPICH Documentation](https://www.mpich.org/documentation/)
-* [OpenMPI Documentation](https://www.open-mpi.org/doc/)
-* **Book:** *Using MPI* by Gropp, Lusk, and Skjellum
-* **Tutorial:** [https://mpitutorial.com/](https://mpitutorial.com/)
+* Finalizes the datatype before use in communication
 
 ---
 
-## 🏁 Best Practices
+## 📚 Useful Constants
 
-* Minimize communication overhead
-* Use non-blocking I/O where appropriate
-* Combine messages to reduce traffic
-* Profile performance to optimize
-* Always `MPI_Finalize()` to clean up
-
----
-
-## 🧩 Real-World Applications of MPI
-
-* Climate Modeling
-* Astrophysics Simulations
-* Computational Biology
-* Machine Learning with HPC
-* Large-scale Financial Risk Analysis
+| Constant             | Description                |
+| -------------------- | -------------------------- |
+| `MPI_COMM_WORLD`     | Default communicator       |
+| `MPI_ANY_SOURCE`     | Wildcard for source rank   |
+| `MPI_ANY_TAG`        | Wildcard for tag           |
+| `MPI_STATUS_IGNORE`  | Ignore the returned status |
+| `MPI_SUM`            | Reduction operation: sum   |
+| `MPI_MAX`, `MPI_MIN` | Other reductions           |
 
 ---
 
-## 📦 Example Project Structure
+## 📦 Sample Project Structure
 
 ```
-mpi-app/
+mpi-cpp/
 ├── src/
 │   └── main.cpp
 ├── Makefile
 └── README.md
 ```
 
-**Makefile Example:**
+**Makefile:**
 
 ```makefile
 all:
@@ -208,10 +235,17 @@ run:
 
 ---
 
-## ✨ Summary
+## 📘 Resources
 
-MPI is **the foundation of distributed computing** in scientific applications. With its **flexible, efficient**, and **standardized API**, MPI allows C++ developers to harness the power of modern supercomputing architectures with precision and scalability.
+* [MPI Tutorial](https://mpitutorial.com/)
+* [MPI Standard Documentation](https://www.mpi-forum.org/)
+* [OpenMPI](https://www.open-mpi.org/)
+* Book: *Using MPI* by Gropp, Lusk, Skjellum
 
 ---
 
-Would you like a version of this as a GitHub README with Markdown formatting and links, or a sample mini project structure as well?
+## ✅ Summary
+
+MPI is the **core technology for distributed-memory parallel programming**, especially in scientific and HPC domains. Using MPI in C++ requires understanding its C bindings, mastering communication and synchronization primitives, and applying performance-aware design.
+
+
